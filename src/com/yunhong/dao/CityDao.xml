@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yunhong.dao.CityDao">
+<!--命名空间不能重复-->
+<!--
+        sql语句必须写在相应的标签中
+        <insert>
+        <update>
+        <delete>
+        <select>
+-->
+<!--    重点强调：
+        1、数据库表中字段不区分大小写
+        ？？？2、类属性区分大小写?或者是只在无参数的SQL中区分小写，即非select语句
+
+        -->
+
+    <select id="getById" parameterType="int" resultType="com.yunhong.domain.City">
+        select * from city where id=#{id}
+    </select>
+
+    <insert id="save">
+        insert into city(id,name,countrycode,district,population) values(#{id},#{name},#{code},#{district},#{population})
+    </insert>
+
+    <select id="getAll" resultType="com.yunhong.domain.City">
+        select * from city
+    </select>
+
+<!--
+    使用简单类型（8大基本类型+String）为参数
+    在#{}中的标识符可以随意去写
+    但是虽然可以随意写，还是要写的有意义
+        -->
+    <select id="select1" resultType="City">
+        select * from city where id=#{id}
+    </select>
+    
+
+
+<!--
+    如果我们为SQL语句传递的参数类型为一个domain引用类型
+    那么#{}中的标识符必须是domain类的属性名
+-->
+    <select id="select3" parameterType="City" resultType="City">
+        select * from city where name=#{name} and population=#{population}
+    </select>
+
+
+
+    <!--
+    如果我们为SQL语句传递的参数类型为一个map类型
+    那么#{}中的标识符必须是map的key
+-->
+    <select id="select5" parameterType="map" resultType="City">
+        select * from city where name=#{name} and population=#{population}
+    </select>
+
+
+    <select id="select7" resultType="City">
+        select * from city where name like '%${value}%'
+    </select>
+
+
+    <select id="select8" resultType="City">
+        select * from city where name like #{name}
+    </select>
+
+
+    <!--
+    以后实际项目开发中，like模糊查询主要用这种方式
+        注意：
+        '%'空格#{}空格'%'
+        空格不能省略
+    -->
+    <select id="select9" resultType="City">
+        select * from city where name like '%' #{name} '%'
+    </select>
+
+
+    <select id="select10" resultType="String">
+        select name from city where id=#{id}
+    </select>
+
+
+    <select id="select11" resultType="String">
+        select name from city
+    </select>
+
+
+    <select id="select12" resultType="int">
+        select count(*) from city
+    </select>
+
+
+    <select id="select14" resultType="Map">
+        select * from city
+    </select>
+    
+    
+    <select id="select15" resultType="City">
+        select id,name,countrycode as code,district,population from city
+    </select>
+    
+
+    <!--
+        id:resultMap标签对的唯一标识
+            将来在使用到resultMap标签的时候，使用id来找到这组标签
+        type:制定一个类型，与数据库表一一对应，建立起表字段和类属性名一一匹配的关系
+    -->
+   <resultMap id="cityMap" type="City">
+       <!--
+       id标签：用来配置主键的对应关系
+       result标签：用来配置普通字段对应关系的
+       对于city表，表结果需要一个id,四个普通字段
+       所以我们需要一个id标签，四个result标签
+       property属性：配置的是类中的属性名
+       column属性：配置的是表中字段名
+       -->
+       <id property="id" column="id"/>
+       <result property="name" column="name"/>
+       <result property="code" column="countrycode"/>
+       <result property="district" column="district"/>
+       <result property="population" column="population"/>
+   </resultMap>
+    <select id="select16" resultMap="cityMap">
+       select id,name,countrycode,district,population from city
+    </select>
+
+    <select id="select17" resultType="City">
+        select * from city
+
+        <!--
+            where标签：
+                当where标签在使用时，必须搭配where标签对中的if标签来使用
+                通过if标签的判断，如果有查询条件，则展现where关键字，如果没有查询条件则不展现where关键字
+
+                where标签会自动屏蔽掉第一个连接符 and/or
+        -->
+        <where>
+
+            <if test="name!=null and name!=''">
+
+                name like '%' #{name} '%'
+            </if>
+
+            <if test="district!=null and district!=''">
+
+                and district like '%' #{district} '%'
+            </if>
+
+        </where>
+    </select>
+
+    <select id="select18" resultType="City">
+        select * from city
+        where name in
+        <!--
+            foreach标签：用来遍历传递来的数组参数
+            collection：表示传递参数的类型
+                        array：数组
+                        list：集合
+
+            item：每一次便利出来的元素，在使用该元素的时候，需要套用在#{}中
+            open：拼接循环的开始符号
+            close：拼接循环的结束符号
+            separator：元素与元素之间的分隔符
+
+        -->
+        <foreach collection="array" item="name" open="(" close=")" separator=",">
+            #{name}
+        </foreach>
+    </select>
+
+
+
+    <!--
+        使用SQL标签制作SQL片段
+        SQL片段的作用是用来代替SQL语句中的代码
+        如果mapper映射文件中的SQL语句中的这些代码出现了大量的重复，
+        我们可以使用SQL片段来代替他们
+
+        id:SQL片段的唯一标识，将来找到SQL片段用id来进行定位
+
+        将来的实际项目开发中，使用SQL片段来代替重复率高，且复杂的子查询
+
+        注意：
+            对于SQL片段
+            在同一个mapper下，大量出现重复的子查询的几率不高，一般情况下，没有使用SQL片段的必要
+            在实际项目开发中，如果大量使用SQL片段，会大大降低SQL语句的可读性
+            在很多企业中，干脆摒弃使用SQL片段的机制
+    -->
+
+    <sql id="sql1">
+        select * from city
+    </sql>
+    <select id="select19" resultType="City">
+        <include refid="sql1"/> where id=#{id}
+
+    </select>
+
+    <select id="select20" resultType="Map">
+        select
+        c.name as city,
+        co.name as country
+        from  city c
+        join country co
+        on c.countrycode=co.code
+    </select>
+
+    <select id="select21" resultType="com.yunhong.vo.CityAndCountryVo">
+        select
+        c.id id,
+        c.name name,
+        c.countrycode cc,
+        c.district district,
+        c.population population,
+        co.code ccode,
+        co.name cname,
+        co.region cregion,
+        co.population cpopulaition
+
+        from city c
+        join country co
+        on c.countrycode=co.code
+
+    </select>
+
+    <select id="select22" resultType="com.yunhong.vo.CityAndCountryVo">
+        select
+        c.id id,
+        c.name name,
+        c.countrycode cc,
+        c.district district,
+        c.population population,
+        co.code ccode,
+        co.name cname,
+        co.region cregion,
+        co.population cpopulaition
+
+        from city c
+        join country co
+        on c.countrycode=co.code
+        where c.name like '%' #{name} '%'
+
+    </select>
+
+
+
+
+
+</mapper>
